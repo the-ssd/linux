@@ -2,4 +2,6 @@
 
 dtb-$(CONFIG_ARCH_EXYNOS) += \
 	gs101-oriole.dtb \
-	gs101-raven.dtb
+	gs101-raven.dtb \
+	zumapro-tegu.dtb \
+	device-zumapro-tegu.dtb
