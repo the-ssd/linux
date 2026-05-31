@@ -19,6 +19,19 @@
 	#size-cells = <1>;
 
 	aliases {
+		/*pinctrl0 = &pinctrl_0;
+		pinctrl1 = &pinctrl_1;
+		pinctrl2 = &pinctrl_2;
+		pinctrl3 = &pinctrl_3;
+		pinctrl4 = &pinctrl_4;
+		pinctrl5 = &pinctrl_5;
+		pinctrl6 = &pinctrl_6;
+		pinctrl7 = &pinctrl_7;
+		pinctrl8 = &pinctrl_8;
+		pinctrl9 = &pinctrl_9;
+		pinctrl10 = &pinctrl_10;
+		pinctrl11 = &pinctrl_11;
+		pinctrl12 = &pinctrl_12;*/
 	};
 
 	chosen {
