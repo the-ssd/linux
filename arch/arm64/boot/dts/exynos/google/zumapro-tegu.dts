@@ -6,9 +6,70 @@
 
 /dts-v1/;
 
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/interrupt-controller/zumapro.h>
+#include "zumapro-pinctrl.dtsi"
+
 / {
+
 	model = "Pixel 9a";
 	compatible = "google,zumapro-tegu", "google,zumapro";
+	interrupt-parent = <&gic>;
+	#address-cells = <2>;
+	#size-cells = <1>;
+
+	aliases {
+	};
+
+	chosen {
+		/* Bootloader expects bootargs specified otherwise it crashes */
+		bootargs = "";
+		//stdout-path = &serial_0;
+
+		/* Use display framebuffer as setup by bootloader */
+		framebuffer0: framebuffer-0 {
+			compatible = "simple-framebuffer";
+			memory-region = <&cont_splash_mem>;
+			// format properties to be added by actual board
+			status = "disabled";
+		};
+	};
+
+	gic: interrupt-controller@10400000 {
+		compatible = "arm,gic-v3";
+		#interrupt-cells = <4>;
+		interrupt-controller;
+		reg = <0x0 0x10400000 0x10000>,		/* GICD */
+		<0x0 0x10440000 0x200000>;	/* GICR * 8 */
+		interrupts = <GIC_PPI 9 IRQ_TYPE_LEVEL_HIGH 0>;
+
+		ppi-partitions {
+			ppi_cluster0: interrupt-partition-0 {
+				affinity = <&cpu0 &cpu1 &cpu2 &cpu3 &cpu4 &cpu5 &cpu6>;
+			};
+
+			ppi_cluster1: interrupt-partition-1 {
+				affinity = <&cpu7>;
+			};
+		};
+	};
+
+	timer {
+		compatible = "arm,armv8-timer";
+		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(8) | IRQ_TYPE_LEVEL_LOW) 0>,
+		<GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(8) | IRQ_TYPE_LEVEL_LOW) 0>,
+		<GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(8) | IRQ_TYPE_LEVEL_LOW) 0>,
+		<GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(8) | IRQ_TYPE_LEVEL_LOW) 0>;
+		clock-frequency = <24576000>;
+	};
+
+	/*clock: clock-controller@26040000 {
+		compatible = "google,zuma-clock";
+		reg = <0x0 0x26040000 0x8000>;
+		#clock-cells = <1>;
+		acpm-ipc-channel = <0>;
+	};*/
+
 
 	cpus {
 		#address-cells = <2>;
@@ -54,7 +115,7 @@
 
 		cpu0: cpu@0 {
 			device_type = "cpu";
-			compatible = "arm,armv9.2";
+			compatible = "arm,cortex-a520"; // android uses arm,armv9.2?? It's not in the kernel sources...
 			reg = <0x0 0x0000>;
 			enable-method = "psci";
 			cpu-idle-states =  <&HAYES_CPU_SLEEP>;
@@ -63,7 +124,7 @@
 		};
 		cpu1: cpu@100 {
 			device_type = "cpu";
-			compatible = "arm,armv9.2";
+			compatible = "arm,cortex-a520"; // android uses arm,armv9.2?? It's not in the kernel sources...
 			reg = <0x0 0x0100>;
 			enable-method = "psci";
 			cpu-idle-states =  <&HAYES_CPU_SLEEP>;
@@ -72,7 +133,7 @@
 		};
 		cpu2: cpu@200 {
 			device_type = "cpu";
-			compatible = "arm,armv9.2";
+			compatible = "arm,cortex-a520"; // android uses arm,armv9.2?? It's not in the kernel sources...
 			reg = <0x0 0x0200>;
 			enable-method = "psci";
 			cpu-idle-states =  <&HAYES_CPU_SLEEP>;
@@ -81,7 +142,7 @@
 		};
 		cpu3: cpu@300 {
 			device_type = "cpu";
-			compatible = "arm,armv9.2";
+			compatible = "arm,cortex-a520"; // android uses arm,armv9.2?? It's not in the kernel sources...
 			reg = <0x0 0x0300>;
 			enable-method = "psci";
 			cpu-idle-states =  <&HAYES_CPU_SLEEP>;
@@ -90,7 +151,7 @@
 		};
 		cpu4: cpu@400 {
 			device_type = "cpu";
-			compatible = "arm,armv9.2";
+			compatible = "arm,cortex-a720"; // android uses arm,armv9.2?? It's not in the kernel sources...
 			reg = <0x0 0x0400>;
 			enable-method = "psci";
 			cpu-idle-states =  <&HUNTER_CPU_SLEEP>;
@@ -99,7 +160,7 @@
 		};
 		cpu5: cpu@500 {
 			device_type = "cpu";
-			compatible = "arm,armv9.2";
+			compatible = "arm,cortex-a720"; // android uses arm,armv9.2?? It's not in the kernel sources...
 			reg = <0x0 0x0500>;
 			enable-method = "psci";
 			cpu-idle-states =  <&HUNTER_CPU_SLEEP>;
@@ -108,7 +169,7 @@
 		};
 		cpu6: cpu@600 {
 			device_type = "cpu";
-			compatible = "arm,armv9.2";
+			compatible = "arm,cortex-a720"; // android uses arm,armv9.2?? It's not in the kernel sources...
 			reg = <0x0 0x0600>;
 			enable-method = "psci";
 			cpu-idle-states =  <&HUNTER_CPU_SLEEP>;
@@ -117,7 +178,7 @@
 		};
 		cpu7: cpu@700 {
 			device_type = "cpu";
-			compatible = "arm,armv9.2";
+			compatible = "arm,cortex-x4"; // android uses arm,armv9.2?? It's not in the kernel sources...
 			reg = <0x0 0x0700>;
 			enable-method = "psci";
 			cpu-idle-states =  <&HUNTERELP_CPU_SLEEP>;
@@ -126,8 +187,8 @@
 		};
 
 		idle-states {
-			entry-method = "arm,psci";
-			HAYES_CPU_SLEEP: hayes-cpu-sleep {
+			entry-method = "psci";
+			HAYES_CPU_SLEEP: cluster-0 { // a520; hayes-cpu-sleep on android
 				idle-state-name = "c2";
 				compatible = "arm,idle-state";
 				arm,psci-suspend-param = <0x0010000>;
@@ -137,7 +198,7 @@
 				min-residency-us = <2000>;
 				status = "okay";
 			};
-			HUNTER_CPU_SLEEP: hunter-cpu-sleep {
+			HUNTER_CPU_SLEEP: cluster-1 { // a720; hunter-cpu-sleep on android
 				idle-state-name = "c2";
 				compatible = "arm,idle-state";
 				arm,psci-suspend-param = <0x0010000>;
@@ -147,7 +208,7 @@
 				min-residency-us = <2500>;
 				status = "okay";
 			};
-			HUNTERELP_CPU_SLEEP: hunterelp-cpu-sleep {
+			HUNTERELP_CPU_SLEEP: cluster-2 { // x4; hunterelp-cpu-sleep on android
 				idle-state-name = "c2";
 				compatible = "arm,idle-state";
 				arm,psci-suspend-param = <0x0010000>;
@@ -160,9 +221,39 @@
 		};
 	};
 
+	psci {
+		compatible = "arm,psci-1.0";
+		method = "smc";
+		status = "okay";
+	};
+
+	// I have no idea why android uses wrong pmus?
+	arm-pmu-cpu0-6 {
+		compatible = "arm,armv8-pmuv3";
+		interrupts = <GIC_PPI 7 (GIC_CPU_MASK_RAW(0x3f) | IRQ_TYPE_LEVEL_HIGH) &ppi_cluster0>;
+	};
+
+	arm-pmu-cpu7 {
+		compatible = "arm,cortex-x2-pmu";
+		interrupts = <GIC_PPI 7 (GIC_CPU_MASK_RAW(0x80) | IRQ_TYPE_LEVEL_HIGH) &ppi_cluster1>;
+	};
+
+	// This might be running without a diver in android???
+	/*pmu_system_controller: system-controller@15460000 {
+		compatible = "samsung,gs101-pmu", "syscon";
+		reg = <0x0 0x15460000 0x10000>;
+	};*/
+
+	dsu-pmu-0 {
+		compatible = "arm,dsu-pmu";
+		interrupts = <GIC_SPI IRQ_CPUCL0_CLUSTERPMUIRQ_CPUCL0 IRQ_TYPE_LEVEL_HIGH 0>;
+		cpus = <&cpu0>, <&cpu1>, <&cpu2>, <&cpu3>, <&cpu4>, <&cpu5>, <&cpu6>, <&cpu7>;
+	};
+
 	memory_0: memory@80000000 {
 		device_type = "memory";
 		reg = <0x0 0x80000000 0x80000000>;
+		//phandle = <0x388>;
 	};
 
 	reserved_memory: reserved-memory {
@@ -170,10 +261,18 @@
 		#size-cells = <1>;
 		ranges;
 
-		ect_binary: ect_binary {
+		cont_splash_mem: splash@fac00000 {
+			/* size to be updated by actual board */
+			reg = <0x0 0xfac00000 0x0>;
+			no-map;
+			status = "disabled";
+		};
+
+
+		/*ect_binary: ect_binary {
 			compatible = "exynos,ect_rmem";
 			reg = <0x0 0x90000000 0x00060000>;
-		};
+		};*/
 
 		gsa_reserved_protected: gsa@90200000 {
 			reg = <0x0 0x90200000 0x3FF000>;
@@ -247,7 +346,7 @@
 			no-map;
 		};
 
-		cp_rmem: cp_rmem {
+		/*cp_rmem: cp_rmem {
 			compatible = "exynos,modem_if";
 			reg = <0x0 0xEA400000 0x00C00000>;
 			rmem_index = <0>;
@@ -269,7 +368,7 @@
 			compatible = "exynos,modem_if";
 			reg = <0x0 0x197FD000 0x00003000>;
 			rmem_index = <3>;
-		};
+		};*/
 
 
 		/* begin debug_snapshot rmem section */
@@ -335,4 +434,17 @@
 			reg = <0 SECLOG_LOG_BUF_BASE SECLOG_LOG_BUF_TOTAL_SIZE>;
 		};*/
 	};
+};
+
+&cont_splash_mem {
+	reg = <0x0 0xfac00000 (1080 * 2424 * 4)>;
+	status = "okay";
+};
+
+&framebuffer0 {
+	width = <1080>;
+	height = <2424>;
+	stride = <(1080 * 4)>;
+	format = "a8r8g8b8";
+	status = "okay";
 };
